@@ -10,6 +10,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.swarm.transducers.Implementations.map;
+import static org.swarm.transducers.Implementations.filter;
 import static org.swarm.transducers.Reduction.reduction;
 import static org.swarm.transducers.Transducers.transduce;
 
@@ -34,19 +35,33 @@ public class TransducersTest {
         }};
     }
 
-    private static ITransducer<String, Long> stringify = map(Object::toString);
-
-    private static IReducer<List<String>, String> addString = (result, input) -> {
-        result.add(input);
-        return reduction(result);
-    };
+    private static <T> IReducer<List<T>, T> addReducer(Class<T> tClass) {
+        return (result, input) -> {
+            result.add(input);
+            return reduction(result);
+        };
+    }
 
     @Test
     public void testMap() throws Exception {
-        final Reduction<List<String>> reduction = transduce(stringify, addString, new ArrayList<>(), longs(10));
+        final ITransducer<String, Long> stringify = map(Object::toString)
+        final Reduction<List<String>> reduction =
+            transduce(stringify, addReducer(String.class), new ArrayList<>(), longs(10));
         assertFalse(reduction.isFailed());
         assertTrue(reduction.isReduced());
         final String[] expected = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        assertEquals(Arrays.asList(expected), reduction.get());
+    }
+
+    @Test
+    public void testFilter() throws Exception {
+        final ITransducer<Integer, Integer> odds = filter(integer -> integer % 2 != 0);
+        final Reduction<List<Integer>> reduction = transduce(
+            odds, addReducer(Integer.class), new ArrayList<>(), ints(10)
+        );
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        final Integer[] expected = {1, 3, 5, 7, 9};
         assertEquals(Arrays.asList(expected), reduction.get());
     }
 }

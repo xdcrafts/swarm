@@ -44,7 +44,7 @@ public class TransducersTest {
 
     @Test
     public void testMap() throws Exception {
-        final ITransducer<String, Long> stringify = map(Object::toString)
+        final ITransducer<String, Long> stringify = map(Object::toString);
         final Reduction<List<String>> reduction =
             transduce(stringify, addReducer(String.class), new ArrayList<>(), longs(10));
         assertFalse(reduction.isFailed());

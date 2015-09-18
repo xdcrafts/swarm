@@ -120,6 +120,7 @@ public final class Implementations {
                         Reduction<T> reductionResult = reduction(result);
                         try {
                             if (counter < n) {
+                                counter++;
                                 reductionResult = reducer.apply(result, input);
                             } else {
                                 reductionResult.setIsReduced(true);
@@ -228,7 +229,7 @@ public final class Implementations {
                     public Reduction<T> apply(T result, A input) {
                         try {
                             return (counter++ % n) == 0
-                                ? reducer.apply(result, input) : reduction(result).setIsReduced(true);
+                                ? reducer.apply(result, input) : reduction(result);
                         } catch (Throwable t) {
                             return reduction(result).setReductionException(new ReductionException(t));
                         }
@@ -310,7 +311,7 @@ public final class Implementations {
                     public Reduction<T> apply(T result, A value) {
                         Reduction<T> reductionResult = reduction(result);
                         try {
-                            if (!this.previous.equals(value)) {
+                            if (this.previous == null || !this.previous.equals(value)) {
                                 this.previous = value;
                                 reductionResult = reducer.apply(result, value);
                             }

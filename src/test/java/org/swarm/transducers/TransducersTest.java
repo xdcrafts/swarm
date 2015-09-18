@@ -4,15 +4,26 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.swarm.transducers.Implementations.map;
-import static org.swarm.transducers.Implementations.filter;
 import static org.swarm.transducers.Implementations.cat;
+import static org.swarm.transducers.Implementations.drop;
+import static org.swarm.transducers.Implementations.dropWhile;
+import static org.swarm.transducers.Implementations.filter;
+import static org.swarm.transducers.Implementations.map;
 import static org.swarm.transducers.Implementations.mapcat;
+import static org.swarm.transducers.Implementations.replace;
+import static org.swarm.transducers.Implementations.take;
+import static org.swarm.transducers.Implementations.takeNth;
+import static org.swarm.transducers.Implementations.takeWhile;
+import static org.swarm.transducers.Implementations.keep;
+import static org.swarm.transducers.Implementations.keepIndexed;
+import static org.swarm.transducers.Implementations.dedupe;
 import static org.swarm.transducers.Reduction.reduction;
 import static org.swarm.transducers.Transducers.transduce;
 
@@ -101,7 +112,134 @@ public class TransducersTest {
         );
         assertFalse(reduction.isFailed());
         assertTrue(reduction.isReduced());
-        final Character[] expected = {'0','1', '2', '3', '4', '5', '6', '7', '8', '9'};
+        final Character[] expected = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+        assertEquals(Arrays.asList(expected), reduction.get());
+    }
+
+    @Test
+    public void testComp() throws Exception {
+        final ITransducer<Integer, Integer> filter = filter(integer -> integer % 2 != 0);
+        final ITransducer<String, Integer> map = map(Object::toString);
+        final ITransducer<String, Integer> transducer = filter.compose(map);
+        final Reduction<List<String>> reduction
+            = transduce(transducer, addReducer(String.class), new ArrayList<>(), ints(10));
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        String[] expected = {"1", "3", "5", "7", "9"};
+        assertEquals(Arrays.asList(expected), reduction.get());
+    }
+
+    @Test
+    public void testTake() throws Exception {
+        final ITransducer<Integer, Integer> transducer = take(5);
+        final Reduction<List<Integer>> reduction = transduce(
+            transducer, addReducer(Integer.class), new ArrayList<>(), ints(20)
+        );
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        final Integer[] expected = {0, 1, 2, 3, 4};
+        assertEquals(Arrays.asList(expected), reduction.get());
+    }
+
+    @Test
+    public void testTakeWhile() throws Exception {
+        final ITransducer<Integer, Integer> transducer = takeWhile(integer -> integer < 5);
+        final Reduction<List<Integer>> reduction = transduce(
+            transducer, addReducer(Integer.class), new ArrayList<>(), ints(20));
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        final Integer[] expected = {0, 1, 2, 3, 4};
+        assertEquals(Arrays.asList(expected), reduction.get());
+    }
+
+    @Test
+    public void testDrop() throws Exception {
+        final ITransducer<Integer, Integer> transducer = drop(5);
+        final Reduction<List<Integer>> reduction = transduce(
+            transducer, addReducer(Integer.class), new ArrayList<>(), ints(10)
+        );
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        final Integer[] expected = {5, 6, 7, 8, 9};
+        assertEquals(Arrays.asList(expected), reduction.get());
+    }
+
+    @Test
+    public void testDropWhile() throws Exception {
+        final ITransducer<Integer, Integer> transducer = dropWhile(integer -> integer < 15);
+        final Reduction<List<Integer>> reduction = transduce(
+            transducer, addReducer(Integer.class), new ArrayList<>(), ints(20)
+        );
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        final Integer[] expected = {15, 16, 17, 18, 19};
+        assertEquals(Arrays.asList(expected), reduction.get());
+    }
+
+    @Test
+    public void testTakeNth() throws Exception {
+        final ITransducer<Integer, Integer> transducer = takeNth(2);
+        final Reduction<List<Integer>> reduction = transduce(
+            transducer, addReducer(Integer.class), new ArrayList<>(), ints(10)
+        );
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        final Integer[] expected = {0, 2, 4, 6, 8};
+        assertEquals(Arrays.asList(expected), reduction.get());
+    }
+
+    @Test
+    public void testReplace() throws Exception {
+        final ITransducer<Integer, Integer> transducer = replace(new HashMap<Integer, Integer>() {{
+            put(3, 42);
+        }});
+        final Reduction<List<Integer>> reduction = transduce(
+            transducer, addReducer(Integer.class), new ArrayList<>(), ints(5)
+        );
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        final Integer[] expected = {0, 1, 2, 42, 4};
+        assertEquals(Arrays.asList(expected), reduction.get());
+    }
+
+    @Test
+    public void testKeep() throws Exception {
+        final ITransducer<Integer, Integer> transducer = keep(integer ->
+                        (integer % 2 == 0) ? Optional.<Integer>empty() : Optional.of(integer)
+        );
+        final Reduction<List<Integer>> reduction = transduce(
+            transducer, addReducer(Integer.class), new ArrayList<>(), ints(10)
+        );
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        final Integer[] expected = {1, 3, 5, 7,9};
+        assertEquals(Arrays.asList(expected), reduction.get());
+    }
+
+    @Test
+    public void testKeepIndexed() throws Exception {
+        final ITransducer<Integer, Integer> transducer = keepIndexed((idx, integer) ->
+            (idx == 1l || idx == 4l) ? Optional.of(integer) : Optional.<Integer>empty()
+        );
+        final Reduction<List<Integer>> reduction = transduce(
+            transducer, addReducer(Integer.class), new ArrayList<>(), ints(10)
+        );
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        final Integer[] expected = {1, 4};
+        assertEquals(Arrays.asList(expected), reduction.get());
+    }
+
+    @Test
+    public void testDedupe() throws Exception {
+        final Integer[] seed = {1, 2, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 0};
+        final ITransducer<Integer, Integer> transducer = dedupe();
+        final Reduction<List<Integer>> reduction = transduce(
+            transducer, addReducer(Integer.class), new ArrayList<>(), Arrays.asList(seed)
+        );
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        final Integer[] expected = {1, 2, 3, 4, 5, 0};
         assertEquals(Arrays.asList(expected), reduction.get());
     }
 }

@@ -1,6 +1,8 @@
 package org.swarm.transducers;
 
 import java.util.Collection;
+import java.util.Optional;
+import java.util.function.BiFunction;
 
 import static org.swarm.transducers.Reduction.reduction;
 
@@ -11,6 +13,28 @@ public final class Transducers {
 
     private Transducers() {
         // Nothing
+    }
+
+    /**
+     * Constructs new reducer.
+     */
+    public static <T, V, R> IReducer<R, T> reducer(
+        IReducer<R, V> reducer, BiFunction<R, T, Reduction<R>> reductionBiFunction
+    ) {
+        return new IReducer<R, T>() {
+            @Override
+            public Optional<R> init() {
+                return reducer.init();
+            }
+            @Override
+            public Reduction<R> complete(Reduction<R> reduction) {
+                return reducer.complete(reduction);
+            }
+            @Override
+            public Reduction<R> apply(R result, T input) {
+                return reductionBiFunction.apply(result, input);
+            }
+        };
     }
 
     /**

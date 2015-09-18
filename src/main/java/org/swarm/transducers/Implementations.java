@@ -10,6 +10,7 @@ import java.util.function.Predicate;
 
 import static org.swarm.transducers.Reduction.reduction;
 import static org.swarm.transducers.Transducers.reduce;
+import static org.swarm.transducers.Transducers.reducer;
 
 /**
  * Class that contains basic transducers implementations.
@@ -48,13 +49,15 @@ public final class Implementations {
         return new ITransducer<A, A>() {
             @Override
             public <R> IReducer<R, A> apply(IReducer<R, A> reducer) {
-                return  (result, input) -> {
+                return reducer(reducer,
+                    (result, input) -> {
                         try {
                             return predicate.test(input) ? reducer.apply(result, input) : reduction(result);
                         } catch (Throwable t) {
                             return reduction(result).setReductionException(new ReductionException(t));
                         }
-                    };
+                    }
+                );
             }
         };
     }
@@ -67,7 +70,7 @@ public final class Implementations {
         return new ITransducer<A, B>() {
             @Override
             public <T> IReducer<T, B> apply(IReducer<T, A> reducer) {
-                return (result, input) -> reduce(reducer, result, input);
+                return reducer(reducer, (result, input) -> reduce(reducer, result, input).setIsReduced(false));
             }
         };
     }
@@ -89,13 +92,15 @@ public final class Implementations {
         return new ITransducer<A, A>() {
             @Override
             public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
-                return (result, input) -> {
+                return reducer(reducer,
+                    (result, input) -> {
                         try {
                             return predicate.test(input) ? reduction(result) : reducer.apply(result, input);
                         } catch (Throwable t) {
                             return reduction(result).setReductionException(new ReductionException(t));
                         }
-                    };
+                    }
+                );
             }
         };
     }
@@ -108,7 +113,7 @@ public final class Implementations {
         return new ITransducer<A, A>() {
             @Override
             public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
-                return new IReducer<T, A>() {
+                return reducer(reducer, new IReducer<T, A>() {
                     volatile long counter = 0;
                     @Override
                     public Reduction<T> apply(T result, A input) {
@@ -124,7 +129,7 @@ public final class Implementations {
                             return reduction(result).setReductionException(new ReductionException(t));
                         }
                     }
-                };
+                });
             }
         };
     }
@@ -138,19 +143,19 @@ public final class Implementations {
         return new ITransducer<A, A>() {
             @Override
             public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
-                return (result, input) -> {
-                    Reduction<T> reductionResult = reduction(result);
-                    try {
-                        if (predicate.test(input)) {
-                            reductionResult = reducer.apply(result, input);
-                        } else {
-                            reductionResult.setIsReduced(true);
+                return reducer(reducer, (result, input) -> {
+                        Reduction<T> reductionResult = reduction(result);
+                        try {
+                            if (predicate.test(input)) {
+                                reductionResult = reducer.apply(result, input);
+                            } else {
+                                reductionResult.setIsReduced(true);
+                            }
+                            return reductionResult;
+                        } catch (Throwable t) {
+                            return reduction(result).setReductionException(new ReductionException(t));
                         }
-                        return reductionResult;
-                    } catch (Throwable t) {
-                        return reduction(result).setReductionException(new ReductionException(t));
-                    }
-                };
+                    });
             }
         };
     }
@@ -163,7 +168,7 @@ public final class Implementations {
         return new ITransducer<A, A>() {
             @Override
             public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
-                return new IReducer<T, A>() {
+                return reducer(reducer, new IReducer<T, A>() {
                     volatile long counter = 0;
                     @Override
                     public Reduction<T> apply(T result, A input) {
@@ -179,7 +184,7 @@ public final class Implementations {
                             return reduction(result).setReductionException(new ReductionException(t));
                         }
                     }
-                };
+                });
             }
         };
     }
@@ -194,17 +199,17 @@ public final class Implementations {
         return new ITransducer<A, A>() {
             @Override
             public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
-                return (result, input) -> {
-                    Reduction<T> reductionResult = reduction(result);
-                    try {
-                        if (!predicate.test(input)) {
-                            reductionResult = reducer.apply(result, input);
+                return reducer(reducer, (result, input) -> {
+                        Reduction<T> reductionResult = reduction(result);
+                        try {
+                            if (!predicate.test(input)) {
+                                reductionResult = reducer.apply(result, input);
+                            }
+                            return reductionResult;
+                        } catch (Throwable t) {
+                            return reduction(result).setReductionException(new ReductionException(t));
                         }
-                        return reductionResult;
-                    } catch (Throwable t) {
-                        return reduction(result).setReductionException(new ReductionException(t));
-                    }
-                };
+                    });
             }
         };
     }
@@ -217,7 +222,7 @@ public final class Implementations {
         return new ITransducer<A, A>() {
             @Override
             public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
-                return new IReducer<T, A>() {
+                return reducer(reducer, new IReducer<T, A>() {
                     volatile long counter = 0;
                     @Override
                     public Reduction<T> apply(T result, A input) {
@@ -228,7 +233,7 @@ public final class Implementations {
                             return reduction(result).setReductionException(new ReductionException(t));
                         }
                     }
-                };
+                });
             }
         };
     }
@@ -251,15 +256,15 @@ public final class Implementations {
         return new ITransducer<A, A>() {
             @Override
             public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
-                return (result, input) -> {
-                    try {
-                        return function.apply(input)
-                            .map(value -> reducer.apply(result, value))
-                            .orElse(reduction(result));
-                    } catch (Throwable t) {
-                        return reduction(result).setReductionException(new ReductionException(t));
-                    }
-                };
+                return reducer(reducer, (result, input) -> {
+                        try {
+                            return function.apply(input)
+                                .map(value -> reducer.apply(result, value))
+                                .orElse(reduction(result));
+                        } catch (Throwable t) {
+                            return reduction(result).setReductionException(new ReductionException(t));
+                        }
+                    });
             }
         };
     }
@@ -273,7 +278,7 @@ public final class Implementations {
         return new ITransducer<A, A>() {
             @Override
             public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
-                return new IReducer<T, A>() {
+                return reducer(reducer, new IReducer<T, A>() {
                     volatile long index = 0;
                     @Override
                     public Reduction<T> apply(T result, A input) {
@@ -285,7 +290,7 @@ public final class Implementations {
                             return reduction(result).setReductionException(new ReductionException(t));
                         }
                     }
-                };
+                });
             }
         };
     }
@@ -299,7 +304,7 @@ public final class Implementations {
         return new ITransducer<A, A>() {
             @Override
             public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
-                return new IReducer<T, A>() {
+                return reducer(reducer, new IReducer<T, A>() {
                     volatile A previous = null;
                     @Override
                     public Reduction<T> apply(T result, A value) {
@@ -314,7 +319,7 @@ public final class Implementations {
                         }
                         return reductionResult;
                     }
-                };
+                });
             }
         };
     }

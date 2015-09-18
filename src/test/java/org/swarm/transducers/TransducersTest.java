@@ -11,6 +11,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.swarm.transducers.Implementations.map;
 import static org.swarm.transducers.Implementations.filter;
+import static org.swarm.transducers.Implementations.cat;
 import static org.swarm.transducers.Reduction.reduction;
 import static org.swarm.transducers.Transducers.transduce;
 
@@ -63,5 +64,25 @@ public class TransducersTest {
         assertTrue(reduction.isReduced());
         final Integer[] expected = {1, 3, 5, 7, 9};
         assertEquals(Arrays.asList(expected), reduction.get());
+    }
+
+    @Test
+    public void testCat() throws Exception {
+        final ITransducer<Integer, Iterable<Integer>> transducer = cat();
+        final List<Iterable<Integer>> data = new ArrayList<Iterable<Integer>>() {{
+            add(ints(10));
+            add(ints(20));
+        }};
+        final Reduction<List<Integer>> reduction = transduce(
+            transducer, addReducer(Integer.class), new ArrayList<>(), data
+        );
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        assertEquals(
+            Arrays.asList(
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
+            ),
+            reduction.get()
+        );
     }
 }

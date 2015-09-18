@@ -2,7 +2,6 @@ package org.swarm.transducers;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -12,7 +11,7 @@ import java.util.function.Supplier;
  * @param <T> input values type
  * @param <R> result type
  */
-public interface IReducer<T, R> {
+public interface IReducer<R, T> extends BiFunction<R, T, IReduction<R>> {
 
     /**
      * Supplier of initial value.
@@ -24,12 +23,13 @@ public interface IReducer<T, R> {
     /**
      * Complete function.
      */
-    default Function<R, R> complete() {
-        return Function.identity();
+    default R complete(R value) {
+        return value;
     }
 
     /**
      * Reducer function.
      */
-    BiFunction<R, T, IReduction<R>> reducer();
+    @Override
+    IReduction<R> apply(R result, T value);
 }

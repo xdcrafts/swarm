@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 import static org.swarm.transducers.Implementations.map;
 import static org.swarm.transducers.Implementations.filter;
 import static org.swarm.transducers.Implementations.cat;
+import static org.swarm.transducers.Implementations.mapcat;
 import static org.swarm.transducers.Reduction.reduction;
 import static org.swarm.transducers.Transducers.transduce;
 
@@ -58,7 +59,7 @@ public class TransducersTest {
     public void testFilter() throws Exception {
         final ITransducer<Integer, Integer> odds = filter(integer -> integer % 2 != 0);
         final Reduction<List<Integer>> reduction = transduce(
-            odds, addReducer(Integer.class), new ArrayList<>(), ints(10)
+                odds, addReducer(Integer.class), new ArrayList<>(), ints(10)
         );
         assertFalse(reduction.isFailed());
         assertTrue(reduction.isReduced());
@@ -84,5 +85,23 @@ public class TransducersTest {
             ),
             reduction.get()
         );
+    }
+
+    @Test
+    public void testMapcat() throws Exception {
+        final ITransducer<Character, Integer> transducer = mapcat(integer -> {
+                final String s = integer.toString();
+                return new ArrayList<Character>(s.length()) {{
+                    for (char c : s.toCharArray())
+                        add(c);
+                }};
+            });
+        final Reduction<List<Character>> reduction = transduce(
+            transducer, addReducer(Character.class), new ArrayList<>(), ints(10)
+        );
+        assertFalse(reduction.isFailed());
+        assertTrue(reduction.isReduced());
+        final Character[] expected = {'0','1', '2', '3', '4', '5', '6', '7', '8', '9'};
+        assertEquals(Arrays.asList(expected), reduction.get());
     }
 }

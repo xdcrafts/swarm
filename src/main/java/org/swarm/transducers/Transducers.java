@@ -42,7 +42,7 @@ public final class Transducers {
      * the result returned from each reduction step as input to the next step. Returns
      * final result.
      */
-    public static <T, R> Reduction<R> reduce(IReducer<R, T> reducer, R initValue, Iterable<T> input) {
+    public static <T, R> Reduction<R> reduce(IReducer<R, ? super T> reducer, R initValue, Iterable<T> input) {
         R result = initValue;
         try {
             for (T inputValue : input) {
@@ -76,7 +76,7 @@ public final class Transducers {
      * transducer. Accepts initial value for reducing process as argument.
      */
     public static <R, A, B> Reduction<R> transduce(
-        ITransducer<A, B> transducer, IReducer<R, A> reducer, R initialValue, Iterable<B> input
+        ITransducer<A, B> transducer, IReducer<R, ? super A> reducer, R initialValue, Iterable<B> input
     ) {
         return reduce(transducer.apply(reducer), initialValue, input);
     }

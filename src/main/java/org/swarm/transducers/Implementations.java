@@ -28,7 +28,7 @@ public final class Implementations {
     public static <A, B> ITransducer<A, B> map(final Function<B, A> function) {
         return new ITransducer<A, B>() {
             @Override
-            public <T> IReducer<T, B> apply(IReducer<T, A> reducer) {
+            public <T> IReducer<T, B> apply(IReducer<T, ? super A> reducer) {
                 return (result, input) -> {
                         try {
                             return reducer.apply(result, function.apply(input));
@@ -48,7 +48,7 @@ public final class Implementations {
     public static <A> ITransducer<A, A> filter(final Predicate<A> predicate) {
         return new ITransducer<A, A>() {
             @Override
-            public <R> IReducer<R, A> apply(IReducer<R, A> reducer) {
+            public <R> IReducer<R, A> apply(IReducer<R, ? super A> reducer) {
                 return reducer(reducer,
                     (result, input) -> {
                         try {
@@ -69,7 +69,7 @@ public final class Implementations {
     public static <A, B extends Iterable<A>> ITransducer<A, B> cat() {
         return new ITransducer<A, B>() {
             @Override
-            public <T> IReducer<T, B> apply(IReducer<T, A> reducer) {
+            public <T> IReducer<T, B> apply(IReducer<T, ? super A> reducer) {
                 return reducer(reducer, (result, input) -> reduce(reducer, result, input).setIsReduced(false));
             }
         };
@@ -91,7 +91,7 @@ public final class Implementations {
     public static <A> ITransducer<A, A> remove(final Predicate<A> predicate) {
         return new ITransducer<A, A>() {
             @Override
-            public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
+            public <T> IReducer<T, A> apply(IReducer<T, ? super A> reducer) {
                 return reducer(reducer,
                     (result, input) -> {
                         try {
@@ -112,7 +112,7 @@ public final class Implementations {
     public static <A> ITransducer<A, A> take(final long n) {
         return new ITransducer<A, A>() {
             @Override
-            public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
+            public <T> IReducer<T, A> apply(IReducer<T, ? super A> reducer) {
                 return reducer(reducer, new IReducer<T, A>() {
                     volatile long counter = 0;
                     @Override
@@ -143,7 +143,7 @@ public final class Implementations {
     public static <A> ITransducer<A, A> takeWhile(final Predicate<A> predicate) {
         return new ITransducer<A, A>() {
             @Override
-            public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
+            public <T> IReducer<T, A> apply(IReducer<T, ? super A> reducer) {
                 return reducer(reducer, (result, input) -> {
                         Reduction<T> reductionResult = reduction(result);
                         try {
@@ -168,7 +168,7 @@ public final class Implementations {
     public static <A> ITransducer<A, A> drop(final long n) {
         return new ITransducer<A, A>() {
             @Override
-            public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
+            public <T> IReducer<T, A> apply(IReducer<T, ? super A> reducer) {
                 return reducer(reducer, new IReducer<T, A>() {
                     volatile long counter = 0;
                     @Override
@@ -199,7 +199,7 @@ public final class Implementations {
     public static <A> ITransducer<A, A> dropWhile(final Predicate<A> predicate) {
         return new ITransducer<A, A>() {
             @Override
-            public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
+            public <T> IReducer<T, A> apply(IReducer<T, ? super A> reducer) {
                 return reducer(reducer, (result, input) -> {
                         Reduction<T> reductionResult = reduction(result);
                         try {
@@ -222,7 +222,7 @@ public final class Implementations {
     public static <A> ITransducer<A, A> takeNth(final long n) {
         return new ITransducer<A, A>() {
             @Override
-            public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
+            public <T> IReducer<T, A> apply(IReducer<T, ? super A> reducer) {
                 return reducer(reducer, new IReducer<T, A>() {
                     volatile long counter = 0;
                     @Override
@@ -256,7 +256,7 @@ public final class Implementations {
     public static <A> ITransducer<A, A> keep(final Function<A, Optional<A>> function) {
         return new ITransducer<A, A>() {
             @Override
-            public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
+            public <T> IReducer<T, A> apply(IReducer<T, ? super A> reducer) {
                 return reducer(reducer, (result, input) -> {
                         try {
                             return function.apply(input)
@@ -278,7 +278,7 @@ public final class Implementations {
     public static <A> ITransducer<A, A> keepIndexed(final BiFunction<Long, A, Optional<A>> function) {
         return new ITransducer<A, A>() {
             @Override
-            public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
+            public <T> IReducer<T, A> apply(IReducer<T, ? super A> reducer) {
                 return reducer(reducer, new IReducer<T, A>() {
                     volatile long index = 0;
                     @Override
@@ -304,7 +304,7 @@ public final class Implementations {
     public static <A> ITransducer<A, A> dedupe() {
         return new ITransducer<A, A>() {
             @Override
-            public <T> IReducer<T, A> apply(IReducer<T, A> reducer) {
+            public <T> IReducer<T, A> apply(IReducer<T, ? super A> reducer) {
                 return reducer(reducer, new IReducer<T, A>() {
                     volatile A previous = null;
                     @Override
@@ -344,7 +344,7 @@ public final class Implementations {
     public static <A, P> ITransducer<Iterable<A>, A> partitionBy(final Function<A, P> function) {
         return new ITransducer<Iterable<A>, A>() {
             @Override
-            public <T> IReducer<T, A> apply(IReducer<T, Iterable<A>> reducer) {
+            public <T> IReducer<T, A> apply(IReducer<T, ? super Iterable<A>> reducer) {
                 return new IReducer<T, A>() {
                     volatile List<A> part = new ArrayList<>();
                     volatile Object mark = new Object();
@@ -365,7 +365,7 @@ public final class Implementations {
                                 finalReduction = reducer.apply(result.get(), copy);
                             }
                         }
-                        return reducer.complete(finalReduction);
+                        return reducer.complete(finalReduction).setIsReduced(true);
                     }
 
                     @Override
@@ -401,7 +401,7 @@ public final class Implementations {
     public static <A> ITransducer<Iterable<A>, A> partitionAll(final int n) {
         return new ITransducer<Iterable<A>, A>() {
             @Override
-            public <T> IReducer<T, A> apply(IReducer<T, Iterable<A>> reducer) {
+            public <T> IReducer<T, A> apply(IReducer<T, ? super Iterable<A>> reducer) {
                 return new IReducer<T, A>() {
                     volatile List<A> part = new ArrayList<>(n);
 
@@ -420,7 +420,7 @@ public final class Implementations {
                                 finalReduction = reducer.apply(result.get(), copy);
                             }
                         }
-                        return reducer.complete(finalReduction);
+                        return reducer.complete(finalReduction).setIsReduced(true);
                     }
 
                     @Override

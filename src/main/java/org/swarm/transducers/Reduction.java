@@ -11,7 +11,7 @@ public final class Reduction<T> implements Supplier<T> {
 
     private volatile T value;
     private volatile boolean isReduced = false;
-    private volatile Optional<ReductionException> reductionException;
+    private volatile Optional<ReductionException> reductionException = Optional.empty();
 
     /**
      * Creates new reduction instance.

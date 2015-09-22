@@ -4,7 +4,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -312,40 +311,5 @@ public class TransducersTest {
         assertFalse(reduction.isFailed());
         assertTrue(reduction.isReduced());
         assertEquals(expected, reduction.get());
-    }
-
-    @Test
-    public void testSimpleCovariance() throws Exception {
-        final ITransducer<Integer, Integer> mapTransducer = map(i -> i * 2);
-        final List<Integer> input = new ArrayList<>(ints(20));
-        final Reduction<Collection<Number>> mapReduction = transduce(
-            mapTransducer,
-            (Collection<Number> result, Number inputValue) -> {
-                result.add(inputValue);
-                return reduction(result);
-            },
-            new ArrayList<>(),
-            input
-        );
-
-        assertFalse(mapReduction.isFailed());
-        assertTrue(mapReduction.isReduced());
-        assertEquals(20, mapReduction.get().size());
-
-        final ITransducer<Number, Number> filterTransducer = filter(number -> number.doubleValue() > 10.0);
-
-        final Reduction<Collection<Number>> filterReduction = transduce(
-            mapTransducer.compose(filterTransducer),
-            (Collection<Number> result, Number inputValue) -> {
-                result.add(inputValue);
-                return reduction(result);
-            },
-            new ArrayList<>(),
-            input
-        );
-
-        assertFalse(filterReduction.isFailed());
-        assertTrue(filterReduction.isReduced());
-        assertEquals(14, filterReduction.get().size());
     }
 }

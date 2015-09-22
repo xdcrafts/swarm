@@ -10,15 +10,15 @@ public interface ITransducer<A, B> {
     /**
      * Transforms reducing function.
      */
-    <T> IReducer<T, B> apply(IReducer<T, ? super A> reducer);
+    <T> IReducer<T, B> apply(IReducer<T, A> reducer);
 
     /**
      * Composes two transducers.
      */
-    default <R> ITransducer<R, B> compose(final ITransducer<R, ? super A> transducer) {
+    default <R> ITransducer<R, B> compose(final ITransducer<R, A> transducer) {
         return new ITransducer<R, B>() {
             @Override
-            public <V> IReducer<V, B> apply(IReducer<V, ? super R> reducer) {
+            public <V> IReducer<V, B> apply(IReducer<V, R> reducer) {
                 return ITransducer.this.apply(transducer.apply(reducer));
             }
         };

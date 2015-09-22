@@ -11,7 +11,11 @@ import java.util.function.Supplier;
 /**
  * Language level utils.
  */
-public class LangUtils {
+public final class LangUtils {
+
+    private LangUtils() {
+        // Nothing
+    }
 
     /**
      * Lazy value.

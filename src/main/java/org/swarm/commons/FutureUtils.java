@@ -21,15 +21,16 @@ import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.stream.Collectors.toList;
 
 /**
- *
+ * Future utils.
  */
-public class FutureUtils {
+public final class FutureUtils {
+
+    private FutureUtils() {
+        // Nothing
+    }
 
     /**
-     *
-     * @param futures
-     * @param <T>
-     * @return
+     * Creates completable future from list of futures.
      */
     public static <T> CompletableFuture<List<T>> sequence(Collection<CompletableFuture<T>> futures) {
         final CompletableFuture<Void> allDoneFuture = allOf(futures.toArray(new CompletableFuture[futures.size()]));

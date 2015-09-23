@@ -20,8 +20,8 @@ public final class LangUtils {
     /**
      * Lazy value.
      */
-    public static <T> Supplier<T> lazy(Supplier<T> supplier) {
-        return new Supplier<T>() {
+    public static <T> ISupplier<T> lazy(Supplier<T> supplier) {
+        return new ISupplier<T>() {
             T value;
             @Override public T get() {
                 if (value == null) {
@@ -35,8 +35,8 @@ public final class LangUtils {
     /**
      * Strict value.
      */
-    public static <T> Supplier<T> strict(Supplier<T> supplier) {
-        return new Supplier<T>() {
+    public static <T> ISupplier<T> strict(Supplier<T> supplier) {
+        return new ISupplier<T>() {
             final T value = supplier.get();
             @Override public T get() {
                 return value;

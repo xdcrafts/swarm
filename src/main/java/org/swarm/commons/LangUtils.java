@@ -31,4 +31,16 @@ public final class LangUtils {
             }
         };
     }
+
+    /**
+     * Strict value.
+     */
+    public static <T> Supplier<T> strict(Supplier<T> supplier) {
+        return new Supplier<T>() {
+            final T value = supplier.get();
+            @Override public T get() {
+                return value;
+            }
+        };
+    }
 }

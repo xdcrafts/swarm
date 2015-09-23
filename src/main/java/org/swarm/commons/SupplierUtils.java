@@ -15,6 +15,13 @@ public final class SupplierUtils {
     }
 
     /**
+     * Creates supplier from simple value.
+     */
+    public static <T> ISupplier<T> supply(T value) {
+        return () -> value;
+    }
+
+    /**
      * Returns function that transforms supplier<T> to supplier<U> by application of mapper function.
      */
     public static <T, U> Function<Supplier<T>, ISupplier<U>> mapSupply(Function<T, U> mapper) {

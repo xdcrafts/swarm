@@ -38,7 +38,7 @@ public final class Implementations {
      * Creates a transducer that transforms a reducing function by applying a mapping
      * function to each input.
      */
-    public static <A, B> ITransducer<A, B> map(final Function<B, A> function) {
+    public static <A, B> ITransducer<A, B> map(final Function<B, ? extends A> function) {
         return new ITransducer<A, B>() {
             @Override
             public <T> IReducer<T, B> apply(IReducer<T, A> reducer) {
@@ -46,6 +46,7 @@ public final class Implementations {
                         try {
                             return reducer.apply(result, function.apply(input));
                         } catch (Throwable t) {
+                            t.printStackTrace();
                             return reduction(result).setReductionException(new ReductionException(t));
                         }
                     };

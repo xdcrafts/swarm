@@ -1,9 +1,8 @@
 package org.swarm.async;
 
-import org.swarm.commons.ISupplier;
-
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 /**
  * Async channel.
@@ -30,5 +29,5 @@ public interface IChannel<T, I> {
     /**
      * Async put tu channel.
      */
-    CompletableFuture<Optional<T>> put(ISupplier<I> value);
+    CompletableFuture<Optional<T>> put(Supplier<I> value);
 }

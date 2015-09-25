@@ -22,6 +22,18 @@ public class ChannelUsage {
     public static void main(String[] args) throws InterruptedException {
         final IChannel<String, Integer> channel = Channel
             .<String, Integer>channel(map(mapSupply(Object::toString))).get();
+        Async.putLoop(channel, () -> {
+                System.err.println("SUPPLY");
+                return 42;
+            });
+        Async.takeLoop(channel, string -> {
+                System.out.println(string);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
         channel.take().whenComplete((s, e) -> System.out.println(s + " - " + e));
         channel.take().whenComplete((s, e) -> System.out.println(s + " - " + e));
         channel.take().whenComplete((s, e) -> System.out.println(s + " - " + e));

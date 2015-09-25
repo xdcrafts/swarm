@@ -29,5 +29,5 @@ public interface IChannel<T, I> {
     /**
      * Async put tu channel.
      */
-    CompletableFuture<Optional<T>> put(Supplier<I> value);
+    CompletableFuture<Optional<Supplier<T>>> put(Supplier<I> value);
 }

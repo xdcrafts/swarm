@@ -1,10 +1,13 @@
 package org.swarm.async;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static org.swarm.commons.OptionalUtils.flatten;
 
@@ -117,5 +120,28 @@ public final class Async {
                 });
         }
         return channel;
+    }
+
+    /**
+     * Pipe.
+     */
+    public static <R, V, T, I> IChannel<T, I> pipe(IChannel<T, I> left, IChannel<R, V> right, Function<T, V> mapper) {
+        if (!left.isClosed() && !right.isClosed()) {
+            left.take().whenComplete((res, err) -> {
+                CompletableFuture<Optional<Supplier<R>>> put = CompletableFuture.completedFuture(empty());
+                if (res != null) {
+                    put = right.put(() -> mapper.apply(res));
+                }
+                put.whenComplete((putRes, putErr) -> pipe(left, right, mapper));
+            });
+        }
+        return left;
+    }
+
+    /**
+     * Pipe.
+     */
+    public static <R, T, I> IChannel<T, I> pipe(IChannel<T, I> left, IChannel<R, T> right) {
+        return pipe(left, right, Function.<T>identity());
     }
 }

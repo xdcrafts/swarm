@@ -34,6 +34,20 @@ public class ChannelUsage {
                     e.printStackTrace();
                 }
             });
+
+        final IChannel<Integer, String> lengthChannel = Channel
+            .channel(map(mapSupply(String::length))).get();
+        Async.takeLoop(lengthChannel, length -> {
+                System.err.println("String length: " + length);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+
+        Async.pipe(channel, lengthChannel);
+
         channel.take().whenComplete((s, e) -> System.out.println(s + " - " + e));
         channel.take().whenComplete((s, e) -> System.out.println(s + " - " + e));
         channel.take().whenComplete((s, e) -> System.out.println(s + " - " + e));

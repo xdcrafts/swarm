@@ -37,8 +37,9 @@ public class FixedBuffer<T> implements IBuffer<T> {
 
     @Override
     public synchronized Optional<T> remove() {
-        this.currentSize.decrementAndGet();
-        return Optional.ofNullable(this.values.poll());
+        final Optional<T> value = Optional.ofNullable(this.values.poll());
+        value.ifPresent(v -> this.currentSize.decrementAndGet());
+        return value;
     }
 
     @Override

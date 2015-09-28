@@ -1,5 +1,6 @@
 package org.swarm.async.impl;
 
+import org.swarm.async.AsyncException;
 import org.swarm.async.IBuffer;
 import org.swarm.async.IChannel;
 import org.swarm.transducers.IReducer;
@@ -173,7 +174,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
                         this.currentPutRequestsCount.incrementAndGet();
                         this.putRequests.offer(new PutRequest(inputSupplier, putRequest));
                     } else {
-                        putRequest.completeExceptionally(new Exception("You can not put!"));
+                        putRequest.completeExceptionally(new AsyncException("Request queue is full."));
                     }
                 } else {
                     final boolean isAdded = this.buffer.add(inputSupplier);
@@ -204,7 +205,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
                             this.currentPutRequestsCount.incrementAndGet();
                             this.putRequests.offer(new PutRequest(inputSupplier, putRequest));
                         } else {
-                            putRequest.completeExceptionally(new Exception("You can not put!"));
+                            putRequest.completeExceptionally(new AsyncException("Request queue is full."));
                         }
                     }
                 }
@@ -227,7 +228,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         final Optional<Supplier<T>> valueOption = this.buffer.remove();
         final CompletableFuture<T> takeRequest = within(new CompletableFuture<>(), this.takeTimeout);
         if (this.isClosed) {
-            takeRequest.completeExceptionally(new Exception("Channel is closed!"));
+            takeRequest.completeExceptionally(new AsyncException("Channel is closed."));
         } else {
             if (valueOption.isPresent()) {
                 final Supplier<T> valueSupplier = valueOption.get();
@@ -253,7 +254,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
                     });
             } else {
                 if (this.currentTakeRequestsCount.get() >= this.maxTakeRequests) {
-                    takeRequest.completeExceptionally(new Exception("You can not pull!"));
+                    takeRequest.completeExceptionally(new AsyncException("Take queue is full."));
                 } else {
                     this.currentTakeRequestsCount.incrementAndGet();
                     this.takeRequests.offer(takeRequest);
@@ -267,7 +268,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
     public synchronized CompletableFuture<Optional<Supplier<T>>> put(Supplier<I> value) {
         final CompletableFuture<Optional<Supplier<T>>> putRequest = new CompletableFuture<>();
         if (this.isClosed) {
-            putRequest.completeExceptionally(new Exception("Channel is closed!"));
+            putRequest.completeExceptionally(new AsyncException("Channel is closed."));
         } else {
             this.transducedReducer.apply(CompletableFuture.completedFuture(Optional.empty()), value).get()
                 .whenComplete((res, exc) -> {

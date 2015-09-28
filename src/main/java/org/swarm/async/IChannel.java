@@ -27,7 +27,14 @@ public interface IChannel<T, I> {
     CompletableFuture<T> take();
 
     /**
-     * Async put tu channel.
+     * Async put to channel.
      */
     CompletableFuture<Optional<Supplier<T>>> put(Supplier<I> value);
+
+    /**
+     * Async put to channel.
+     */
+    default CompletableFuture<Optional<Supplier<T>>> put(CompletableFuture<I> future) {
+        return future.thenCompose(value -> put(() -> value));
+    }
 }

@@ -128,12 +128,12 @@ public final class Async {
     public static <R, V, T, I> IChannel<T, I> pipe(IChannel<T, I> left, IChannel<R, V> right, Function<T, V> mapper) {
         if (!left.isClosed() && !right.isClosed()) {
             left.take().whenComplete((res, err) -> {
-                CompletableFuture<Optional<Supplier<R>>> put = CompletableFuture.completedFuture(empty());
-                if (res != null) {
-                    put = right.put(() -> mapper.apply(res));
-                }
-                put.whenComplete((putRes, putErr) -> pipe(left, right, mapper));
-            });
+                    CompletableFuture<Optional<Supplier<R>>> put = CompletableFuture.completedFuture(empty());
+                    if (res != null) {
+                        put = right.put(() -> mapper.apply(res));
+                    }
+                    put.whenComplete((putRes, putErr) -> pipe(left, right, mapper));
+                });
         }
         return left;
     }

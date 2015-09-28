@@ -6,6 +6,7 @@ import org.swarm.transducers.IReducer;
 import org.swarm.transducers.ITransducer;
 import org.swarm.transducers.Implementations;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -15,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static org.swarm.transducers.Reduction.reduction;
+import static org.swarm.commons.FutureUtils.within;
 
 /**
  * Implementation of IChannel.
@@ -34,6 +36,8 @@ public final class Channel<T, I> implements IChannel<T, I> {
         private volatile IBuffer<Supplier<T>> buffer = new FixedBuffer<>(1);
         private volatile int maxPutRequests = 16384;
         private volatile int maxTakeRequests = 16384;
+        private volatile Duration takeDuration = Duration.ofSeconds(1);
+        private volatile Duration putDuration = Duration.ofSeconds(1);
         public ChannelBuilder(ITransducer<Supplier<T>, Supplier<I>> transducer) {
             this.transducer = transducer;
         }
@@ -72,10 +76,30 @@ public final class Channel<T, I> implements IChannel<T, I> {
             this.maxTakeRequests = max;
             return this;
         }
+        /**
+         * Setup take timeout.
+         */
+        public ChannelBuilder<T, I> withTakeTimeout(Duration timeout) {
+            this.takeDuration = timeout;
+            return this;
+        }
+        /**
+         * Setup put timeout.
+         */
+        public ChannelBuilder<T, I> withPutTimeout(Duration timeout) {
+            this.putDuration = timeout;
+            return this;
+        }
         @Override
         public Channel<T, I> get() {
             return new Channel<>(
-                this.executor, this.buffer, this.transducer, this.maxPutRequests, this.maxTakeRequests
+                this.executor,
+                this.buffer,
+                this.transducer,
+                this.maxPutRequests,
+                this.maxTakeRequests,
+                this.takeDuration,
+                this.putDuration
             );
         }
     }
@@ -118,6 +142,9 @@ public final class Channel<T, I> implements IChannel<T, I> {
     private final int maxPutRequests;
     private final int maxTakeRequests;
 
+    private final Duration takeTimeout;
+    private final Duration putTimeout;
+
     private final AtomicInteger currentPutRequestsCount = new AtomicInteger();
     private final AtomicInteger currentTakeRequestsCount = new AtomicInteger();
 
@@ -128,14 +155,19 @@ public final class Channel<T, I> implements IChannel<T, I> {
         IBuffer<Supplier<T>> buffer,
         ITransducer<Supplier<T>, Supplier<I>> transducer,
         int maxPutRequests,
-        int maxTakeRequests
+        int maxTakeRequests,
+        Duration takeTimeout,
+        Duration putTimeout
     ) {
         this.executor = executor;
         this.buffer = buffer;
         this.maxPutRequests = maxPutRequests;
         this.maxTakeRequests = maxTakeRequests;
+        this.takeTimeout = takeTimeout;
+        this.putTimeout = putTimeout;
         this.transducedReducer = transducer.apply((resultFuture, inputSupplier) -> {
-                final CompletableFuture<Optional<Supplier<T>>> putRequest = new CompletableFuture<>();
+                final CompletableFuture<Optional<Supplier<T>>> putRequest = within(
+                    new CompletableFuture<>(), this.putTimeout);
                 if (this.buffer.isFull()) {
                     if (this.currentPutRequestsCount.get() < this.maxPutRequests) {
                         this.currentPutRequestsCount.incrementAndGet();
@@ -147,22 +179,24 @@ public final class Channel<T, I> implements IChannel<T, I> {
                     final boolean isAdded = this.buffer.add(inputSupplier);
                     if (isAdded) {
                         putRequest.complete(Optional.of(inputSupplier));
-                        final Optional<CompletableFuture<T>> takeRequestOption =
-                                Optional.ofNullable(this.takeRequests.poll());
-                        takeRequestOption.ifPresent(takeRequest -> {
+                        CompletableFuture<T> takeRequest = this.takeRequests.poll();
+                        while (takeRequest != null && takeRequest.isDone()) {
+                            takeRequest = this.takeRequests.poll();
+                        }
+                        Optional.ofNullable(takeRequest).ifPresent(request -> {
                                 final Optional<Supplier<T>> valueFromBuffer = this.buffer.remove();
                                 if (valueFromBuffer.isPresent()) {
                                     CompletableFuture.supplyAsync(valueFromBuffer.get(), this.executor)
-                                        .whenComplete((res, exc) -> {
-                                                if (res != null) {
-                                                    takeRequest.complete(res);
-                                                } else {
-                                                    takeRequest.completeExceptionally(exc);
-                                                }
-                                            });
+                                            .whenComplete((res, exc) -> {
+                                                    if (res != null) {
+                                                        request.complete(res);
+                                                    } else {
+                                                        request.completeExceptionally(exc);
+                                                    }
+                                                });
                                     this.currentTakeRequestsCount.decrementAndGet();
                                 } else {
-                                    this.takeRequests.addFirst(takeRequest);
+                                    this.takeRequests.addFirst(request);
                                 }
                             });
                     } else {
@@ -191,19 +225,23 @@ public final class Channel<T, I> implements IChannel<T, I> {
     @Override
     public synchronized CompletableFuture<T> take() {
         final Optional<Supplier<T>> valueOption = this.buffer.remove();
-        final CompletableFuture<T> takeRequest = new CompletableFuture<>();
+        final CompletableFuture<T> takeRequest = within(new CompletableFuture<>(), this.takeTimeout);
         if (this.isClosed) {
             takeRequest.completeExceptionally(new Exception("Channel is closed!"));
         } else {
             if (valueOption.isPresent()) {
                 final Supplier<T> valueSupplier = valueOption.get();
-                Optional.ofNullable(this.putRequests.poll()).ifPresent(putRequest -> {
+                PutRequest putRequest = this.putRequests.poll();
+                while (putRequest != null && putRequest.requestFuture.isDone()) {
+                    putRequest = this.putRequests.poll();
+                }
+                Optional.ofNullable(putRequest).ifPresent(request -> {
                         final boolean isAdded = this.buffer.add(valueSupplier);
                         if (isAdded) {
-                            putRequest.requestFuture.complete(Optional.of(valueSupplier));
+                            request.requestFuture.complete(Optional.of(valueSupplier));
                             this.currentPutRequestsCount.decrementAndGet();
                         } else {
-                            this.putRequests.addFirst(putRequest);
+                            this.putRequests.addFirst(request);
                         }
                     });
                 CompletableFuture.supplyAsync(valueOption.get(), this.executor).whenComplete((res, exc) -> {

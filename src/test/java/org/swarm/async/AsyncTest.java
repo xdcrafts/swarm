@@ -2,6 +2,7 @@ package org.swarm.async;
 
 import org.junit.Test;
 import org.swarm.async.impl.Channel;
+import org.swarm.monads.Either;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -10,13 +11,13 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
 import static org.swarm.async.Async.pipe;
-import static org.swarm.async.Async.putWhileLoop;
-import static org.swarm.async.Async.takeWhileLoop;
+import static org.swarm.async.Async.putLoop;
+import static org.swarm.async.Async.takeLoop;
 import static org.swarm.commons.LangUtils.supply;
 
 /**
@@ -36,12 +37,27 @@ public class AsyncTest {
         }
     }
 
-    public static <B, T> BiPredicate<B, T> takeN(int n) {
-        return new BiPredicate<B, T>() {
+    public static <B> Async.AsyncCompletionHandler<B> putN(int n) {
+        return new Async.AsyncCompletionHandler<B>() {
             volatile int counter = 1;
             @Override
-            public boolean test(B b, T t) {
-                return counter++ < n;
+            public void handle(Either<Throwable, B> result, Async.Completion completion) {
+                if (counter++ >= n) {
+                    completion.done();
+                }
+            }
+        };
+    }
+
+    public static <B> Async.AsyncCompletionHandler<B> takeN(int n, Consumer<B> consumer) {
+        return new Async.AsyncCompletionHandler<B>() {
+            volatile int counter = 1;
+            @Override
+            public void handle(Either<Throwable, B> result, Async.Completion completion) {
+                result.consumeRight(consumer);
+                if (counter++ >= n) {
+                    completion.done();
+                }
             }
         };
     }
@@ -105,11 +121,11 @@ public class AsyncTest {
     public void takeAndPutWhileTest() throws InterruptedException, ExecutionException {
         final IChannel<String, String> channel = Channel.<String>channel().get();
         final List<String> values = new ArrayList<>();
-        final CompletableFuture<Void> first = takeWhileLoop(channel, values::add, takeN(8));
-        putWhileLoop(channel, supply("value"), takeN(10));
+        final CompletableFuture<Void> first = takeLoop(channel, takeN(8, values::add));
+        putLoop(channel, supply("value"), putN(10));
         first.get();
         assertEquals(8, values.size());
-        final CompletableFuture<Void> second = takeWhileLoop(channel, values::add, takeN(2));
+        final CompletableFuture<Void> second = takeLoop(channel, takeN(2, values::add));
         second.get();
         assertEquals(10, values.size());
     }

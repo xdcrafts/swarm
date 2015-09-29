@@ -1,15 +1,16 @@
 package org.swarm.async;
 
+import org.swarm.monads.Either;
+
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiPredicate;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
-import static org.swarm.commons.OptionalUtils.flatten;
 
 /**
  * Namespace for async helper functions.
@@ -20,6 +21,44 @@ public final class Async {
         // Nothing
     }
 
+    /**
+     * Internal completion hook.
+     */
+    public static class Completion {
+        private final CompletableFuture<Void> completion = new CompletableFuture<>();
+        /**
+         * Completes with exception.
+         */
+        public void exceptionally(Throwable error) {
+            this.completion.completeExceptionally(error);
+        }
+        /**
+         * Completes normally.
+         */
+        public void done() {
+            this.completion.complete(null);
+        }
+        public boolean isDone() {
+            return this.completion.isDone();
+        }
+        /**
+         * Completion hook.
+         */
+        public CompletableFuture<Void> get() {
+            return this.completion;
+        }
+    }
+
+    /**
+     * Handler interface for async result of completable future and completion hook.
+     * @param <V>
+     */
+    public interface AsyncCompletionHandler<V> {
+        /**
+         * Handles async result with completion hook.
+         */
+        void handle(Either<Throwable, V> result, Completion completion);
+    }
 
     /**
      * Put loop.
@@ -27,91 +66,59 @@ public final class Async {
     private static <T, I> void putLoop(
         IChannel<T, I> channel,
         Supplier<I> supplier,
-        Consumer<Throwable> exceptionHandler,
-        CompletableFuture<Void> completion
+        AsyncCompletionHandler<Supplier<T>> asyncCompletionHandler,
+        Completion completion
     ) {
         if (!channel.isClosed()) {
             channel.put(supplier).whenComplete((res, err) -> {
-                    if (err != null) {
-                        exceptionHandler.accept(err);
+                    if (res == null && err == null) {
+                        completion.exceptionally(
+                            new AsyncException("No response, no error in result of completable future.")
+                        );
                     }
-                    putLoop(channel, supplier, exceptionHandler, completion);
-                });
-        } else {
-            completion.complete(null);
-        }
-    }
-
-    /**
-     * Put loop.
-     */
-    private static <T, I> CompletableFuture<Void> putLoop(
-        IChannel<T, I> channel,
-        Supplier<I> supplier,
-        Consumer<Throwable> exceptionHandler
-    ) {
-        final CompletableFuture<Void> completion = new CompletableFuture<>();
-        putLoop(channel, supplier, exceptionHandler, completion);
-        return completion;
-    }
-
-    /**
-     * Put loop.
-     */
-    private static <T, I> void putLoop(
-        IChannel<T, I> channel,
-        Supplier<I> supplier,
-        CompletableFuture<Void> completion
-    ) {
-        if (!channel.isClosed()) {
-            channel.put(supplier).whenComplete((res, err) -> putLoop(channel, supplier, completion));
-        } else {
-            completion.complete(null);
-        }
-    }
-
-    /**
-     * Put loop.
-     */
-    public static <T, I> CompletableFuture<Void> putLoop(IChannel<T, I> channel, Supplier<I> supplier) {
-        final CompletableFuture<Void> completion = new CompletableFuture<>();
-        putLoop(channel, supplier, completion);
-        return completion;
-    }
-
-    /**
-     * Put loop.
-     */
-    private static <T, I> void putWhileLoop(
-        IChannel<T, I> channel,
-        Supplier<I> supplier,
-        BiPredicate<Optional<Supplier<T>>, Optional<Throwable>> predicate,
-        CompletableFuture<Void> completion
-    ) {
-        if (!channel.isClosed()) {
-            channel.put(supplier).whenComplete((res, err) -> {
-                    if (predicate.test(flatten(ofNullable(res)), ofNullable(err))) {
-                        putWhileLoop(channel, supplier, predicate, completion);
-                    } else {
-                        completion.complete(null);
+                    try {
+                        asyncCompletionHandler.handle(Either.either(ofNullable(err), res), completion);
+                    } catch (Throwable t) {
+                        completion.exceptionally(t);
+                    }
+                    if (!completion.isDone()) {
+                        putLoop(channel, supplier, asyncCompletionHandler, completion);
                     }
                 });
         } else {
-            completion.complete(null);
+            completion.done();
         }
     }
 
     /**
      * Put loop.
      */
-    public static <T, I> CompletableFuture<Void> putWhileLoop(
+    public static <T, I> CompletableFuture<Void> putLoop(
         IChannel<T, I> channel,
         Supplier<I> supplier,
-        BiPredicate<Optional<Supplier<T>>, Optional<Throwable>> predicate
+        AsyncCompletionHandler<Supplier<T>> asyncCompletionHandler
     ) {
-        final CompletableFuture<Void> completion = new CompletableFuture<>();
-        putWhileLoop(channel, supplier, predicate, completion);
-        return completion;
+        final Completion completion = new Completion();
+        putLoop(channel, supplier, asyncCompletionHandler, completion);
+        return completion.get();
+    }
+
+    /**
+     * Put loop.
+     */
+    public static <T, I> CompletableFuture<Void> putLoop(
+        IChannel<T, I> channel,
+        Supplier<I> supplier
+    ) {
+        final Completion completion = new Completion();
+        putLoop(
+            channel,
+            supplier,
+            (res, cmp) -> {
+            },
+            completion
+        );
+        return completion.get();
     }
 
     /**
@@ -119,22 +126,27 @@ public final class Async {
      */
     private static <T, I> void takeLoop(
         IChannel<T, I> channel,
-        Consumer<T> consumer,
-        Consumer<Throwable> exceptionHandler,
-        CompletableFuture<Void> completion
+        AsyncCompletionHandler<T> asyncCompletionHandler,
+        Completion completion
     ) {
         if (!channel.isClosed()) {
             channel.take().whenComplete((res, err) -> {
-                    if (res != null) {
-                        consumer.accept(res);
+                    if (res == null && err == null) {
+                        completion.exceptionally(
+                            new AsyncException("No response, no error in result of completable future.")
+                        );
                     }
-                    if (err != null) {
-                        exceptionHandler.accept(err);
+                    try {
+                        asyncCompletionHandler.handle(Either.either(err, res), completion);
+                    } catch (Throwable t) {
+                        completion.exceptionally(t);
                     }
-                    takeLoop(channel, consumer, exceptionHandler, completion);
+                    if (!completion.isDone()) {
+                        takeLoop(channel, asyncCompletionHandler, completion);
+                    }
                 });
         } else {
-            completion.complete(null);
+            completion.done();
         }
     }
 
@@ -142,79 +154,39 @@ public final class Async {
      * Take loop.
      */
     public static <T, I> CompletableFuture<Void> takeLoop(
-        IChannel<T, I> channel, Consumer<T> consumer, Consumer<Throwable> exceptionHandler
-    ) {
-        final CompletableFuture<Void> completion = new CompletableFuture<>();
-        takeLoop(channel, consumer, exceptionHandler, completion);
-        return completion;
-    }
-
-    /**
-     * Take loop.
-     */
-    private static <T, I> void takeLoop(
         IChannel<T, I> channel,
-        Consumer<T> consumer,
-        CompletableFuture<Void> completion
+        AsyncCompletionHandler<T> asyncCompletionHandler
     ) {
-        if (!channel.isClosed()) {
-            channel.take().whenComplete((res, err) -> {
-                    if (res != null) {
-                        consumer.accept(res);
-                    }
-                    takeLoop(channel, consumer);
-                });
-        } else {
-            completion.complete(null);
-        }
+        final Completion completion = new Completion();
+        takeLoop(channel, asyncCompletionHandler, completion);
+        return completion.get();
     }
 
     /**
      * Take loop.
      */
-    public static <T, I> CompletableFuture<Void> takeLoop(IChannel<T, I> channel, Consumer<T> consumer) {
-        final CompletableFuture<Void> completion = new CompletableFuture<>();
-        takeLoop(channel, consumer, completion);
-        return completion;
-    }
-
-    /**
-     * Take loop.
-     */
-    private static <T, I> void takeWhileLoop(
+    public static <T, I> CompletableFuture<Void> takeLoop(
         IChannel<T, I> channel,
-        Consumer<T> consumer,
-        BiPredicate<Optional<T>, Optional<Throwable>> predicate,
-        CompletableFuture<Void> completion
+        Consumer<T> consumer
     ) {
-        if (!channel.isClosed()) {
-            channel.take().whenComplete((res, err) -> {
-                    if (res != null) {
-                        consumer.accept(res);
-                    }
-                    if (predicate.test(ofNullable(res), ofNullable(err))) {
-                        takeWhileLoop(channel, consumer, predicate, completion);
-                    } else {
-                        completion.complete(null);
-                    }
-                });
-        } else {
-            completion.complete(null);
-        }
+        final Completion completion = new Completion();
+        takeLoop(channel, (res, cmp) -> res.consumeRight(consumer), completion);
+        return completion.get();
     }
 
     /**
      * Take loop.
      */
-    public static <T, I> CompletableFuture<Void> takeWhileLoop(
+    public static <T, I> CompletableFuture<Void> takeLoop(
         IChannel<T, I> channel,
-        Consumer<T> consumer,
-        BiPredicate<Optional<T>, Optional<Throwable>> predicate
+        BiConsumer<T, Completion> consumer
     ) {
-        final CompletableFuture<Void> completion = new CompletableFuture<>();
-        takeWhileLoop(channel, consumer, predicate, completion);
-        return completion;
+        final Completion completion = new Completion();
+        takeLoop(channel, (res, cmp) -> res.consumeRight(r -> consumer.accept(r, cmp)), completion);
+        return completion.get();
     }
+
+    // todo rewrite with handlers.
 
     /**
      * Pipe.

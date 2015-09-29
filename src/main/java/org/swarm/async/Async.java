@@ -186,8 +186,6 @@ public final class Async {
         return completion.get();
     }
 
-    // todo rewrite with handlers.
-
     /**
      * Pipe.
      */

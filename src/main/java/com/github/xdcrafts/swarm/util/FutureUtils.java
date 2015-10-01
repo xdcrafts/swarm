@@ -1,9 +1,3 @@
-/*******************************************************************************
- * Copyright (C) PlaceIQ, Inc - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
- * Created by placeiq 2015
- *******************************************************************************/
 package com.github.xdcrafts.swarm.util;
 
 import java.time.Duration;
@@ -31,6 +25,9 @@ public final class FutureUtils {
 
     /**
      * Creates completable future from list of futures.
+     * @param <T> value type
+     * @param futures list of completable futures
+     * @return completable future with list of values of type T
      */
     public static <T> CompletableFuture<List<T>> sequence(Collection<CompletableFuture<T>> futures) {
         final CompletableFuture<Void> allDoneFuture = allOf(futures.toArray(new CompletableFuture[futures.size()]));
@@ -41,6 +38,7 @@ public final class FutureUtils {
      * Completes {@code future} with value from {@code resultSupplier}.
      * If {@code resultSupplier} throws an exception, then {@code future} will be {@code completedExceptionally()}
      * with that exception.
+     * @param <T> value type
      * @param future - future to complete
      * @param resultSupplier - function that may throw an exception
      */
@@ -56,6 +54,7 @@ public final class FutureUtils {
      * Completes {@code future} exceptionally with exception from {@code exceptionSupplier}.
      * If {@code exceptionSupplier} throws an exception, then {@code future} will be {@code completedExceptionally()}
      * with this new exception.
+     * @param <T> value type
      * @param future - future to complete
      * @param exceptionSupplier - function that may throw an exception
      */
@@ -83,6 +82,9 @@ public final class FutureUtils {
 
     /**
      * Creates new timeout future that completes exceptionally after duration.
+     * @param <T> value type
+     * @param duration timeout
+     * @return completable future that completes after duration timeout
      */
     public static <T> CompletableFuture<T> timeout(Duration duration) {
         final CompletableFuture<T> promise = new CompletableFuture<>();
@@ -96,6 +98,10 @@ public final class FutureUtils {
 
     /**
      * Returns new future that returns with timeout exception if not done within timeout duration.
+     * @param <T> value type
+     * @param future completable future
+     * @param duration timeout duration
+     * @return completable future that completes either with result of type T or with timeout.
      */
     public static <T> CompletableFuture<T> within(CompletableFuture<T> future, Duration duration) {
         final CompletableFuture<T> timeout = timeout(duration);

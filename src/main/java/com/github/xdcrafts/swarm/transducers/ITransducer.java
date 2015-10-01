@@ -9,11 +9,17 @@ public interface ITransducer<A, B> {
 
     /**
      * Transforms reducing function.
+     * @param reducer reducing function
+     * @param <T> reduction result type
+     * @return new reducer function
      */
     <T> IReducer<T, B> apply(IReducer<T, A> reducer);
 
     /**
      * Composes two transducers.
+     * @param transducer another transducer
+     * @param <R> type
+     * @return new transducer
      */
     default <R> ITransducer<R, B> compose(final ITransducer<R, A> transducer) {
         return new ITransducer<R, B>() {

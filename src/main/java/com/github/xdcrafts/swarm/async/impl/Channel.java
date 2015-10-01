@@ -44,6 +44,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup executor.
+         * @param e executor
          * @return this builder instance
          */
         public ChannelBuilder<T, I> withExecutor(Executor e) {
@@ -52,6 +53,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup buffer.
+         * @param b buffer
          * @return this builder instance
          */
         public ChannelBuilder<T, I> withBuffer(IBuffer<Supplier<T>> b) {
@@ -60,6 +62,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup capacity.
+         * @param n size of fixed buffer
          * @return this builder instance
          */
         public ChannelBuilder<T, I> withCapacity(int n) {
@@ -68,6 +71,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup max put requests.
+         * @param  max max number of put requests
          * @return this builder instance
          */
         public ChannelBuilder<T, I> withMaxPutRequests(int max) {
@@ -76,6 +80,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup max take requests.
+         * @param  max max number of take requests
          * @return this builder instance
          */
         public ChannelBuilder<T, I> withMaxTakeRequests(int max) {
@@ -84,6 +89,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup take timeout.
+         * @param timeout take timeout duration
          * @return this builder instance
          */
         public ChannelBuilder<T, I> withTakeTimeout(Duration timeout) {
@@ -92,6 +98,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup put timeout.
+         * @param timeout put timeout duration
          * @return this builder instance
          */
         public ChannelBuilder<T, I> withPutTimeout(Duration timeout) {
@@ -135,6 +142,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
 
     /**
      * Creates new channel instance.
+     * @param transducer transducer
      * @param <T> channel result type
      * @param <I> channel input type
      * @return new channel builder from I to T

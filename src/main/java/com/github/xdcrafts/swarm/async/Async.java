@@ -28,6 +28,7 @@ public final class Async {
         private final CompletableFuture<Void> completion = new CompletableFuture<>();
         /**
          * Completes with exception.
+         * @param error exception
          */
         public void exceptionally(Throwable error) {
             this.completion.completeExceptionally(error);
@@ -43,6 +44,7 @@ public final class Async {
         }
         /**
          * Completion hook.
+         * @return completable future
          */
         public CompletableFuture<Void> get() {
             return this.completion;
@@ -51,11 +53,13 @@ public final class Async {
 
     /**
      * Handler interface for async result of completable future and completion hook.
-     * @param <V>
+     * @param <V> value type
      */
     public interface AsyncCompletionHandler<V> {
         /**
          * Handles async result with completion hook.
+         * @param result result of async computation
+         * @param completion completion hook
          */
         void handle(ITryM<V> result, Completion completion);
     }
@@ -93,7 +97,14 @@ public final class Async {
     }
 
     /**
-     * Put loop.
+     * Put loop with specified channel, supplier and async completion handler.
+     * Interrupts on channel close or explicit completion complete.
+     * @param channel async channel
+     * @param supplier supplier function
+     * @param asyncCompletionHandler completion handler
+     * @param <T> channel value type
+     * @param <I> channel input type
+     * @return future that completes with end of looping
      */
     public static <T, I> CompletableFuture<Void> putLoop(
         IChannel<T, I> channel,
@@ -106,7 +117,13 @@ public final class Async {
     }
 
     /**
-     * Put loop.
+     * Put loop with specified channel, supplier and async completion handler.
+     * Interrupts on channel close or explicit completion complete.
+     * @param channel async channel
+     * @param supplier supplier function
+     * @param <T> channel value type
+     * @param <I> channel input type
+     * @return future that completes with end of looping
      */
     public static <T, I> CompletableFuture<Void> putLoop(
         IChannel<T, I> channel,
@@ -154,7 +171,13 @@ public final class Async {
     }
 
     /**
-     * Take loop.
+     * Loops take for specified channel with async completion handler.
+     * Interrupts on channel close or explicit completion complete.
+     * @param channel async channel
+     * @param asyncCompletionHandler async handler
+     * @param <T> channel values type
+     * @param <I> channel input type
+     * @return future that completes with end of looping
      */
     public static <T, I> CompletableFuture<Void> takeLoop(
         IChannel<T, I> channel,
@@ -166,7 +189,13 @@ public final class Async {
     }
 
     /**
-     * Take loop.
+     * Loops take for specified channel with async completion handler.
+     * Interrupts on channel close or explicit completion complete.
+     * @param channel async channel
+     * @param consumer async handler
+     * @param <T> channel values type
+     * @param <I> channel input type
+     * @return future that completes with end of looping
      */
     public static <T, I> CompletableFuture<Void> takeLoop(
         IChannel<T, I> channel,
@@ -178,7 +207,13 @@ public final class Async {
     }
 
     /**
-     * Take loop.
+     * Loops take for specified channel with async completion handler.
+     * Interrupts on channel close or explicit completion complete.
+     * @param channel async channel
+     * @param consumer async handler
+     * @param <T> channel values type
+     * @param <I> channel input type
+     * @return future that completes with end of looping
      */
     public static <T, I> CompletableFuture<Void> takeLoop(
         IChannel<T, I> channel,
@@ -212,7 +247,15 @@ public final class Async {
     }
 
     /**
-     * Pipe.
+     * Pipes all requests from left channel to right channel via mapping function.
+     * @param left async channel
+     * @param right async channel
+     * @param mapper function from T to V
+     * @param <R> right channel values type
+     * @param <V> right channel input type
+     * @param <T> left channel values type
+     * @param <I> left channel input type
+     * @return future that completes with end of looping
      */
     public static <R, V, T, I> CompletableFuture<Void> pipe(
         IChannel<T, I> left,
@@ -225,7 +268,13 @@ public final class Async {
     }
 
     /**
-     * Pipe.
+     * Pipes all requests from left channel to right channel.
+     * @param left async channel
+     * @param right async channel
+     * @param <R> right channel values type
+     * @param <T> left channel values type
+     * @param <I> left channel input type
+     * @return future that completes with end of looping
      */
     public static <R, T, I> CompletableFuture<Void> pipe(IChannel<T, I> left, IChannel<R, T> right) {
         return pipe(left, right, Function.<T>identity());

@@ -15,6 +15,9 @@ public final class Reduction<T> implements Supplier<T> {
 
     /**
      * Creates new reduction instance.
+     * @param value value to wrap with reduction
+     * @param <T> value type
+     * @return reduction instance
      */
     public static <T> Reduction<T> reduction(T value) {
         return new Reduction<>(value);
@@ -30,6 +33,8 @@ public final class Reduction<T> implements Supplier<T> {
 
     /**
      * Reduction termination setter.
+     * @param reduced set up reduced flag
+     * @return this reduction instance
      */
     public Reduction<T> setIsReduced(boolean reduced) {
         this.isReduced = reduced;
@@ -46,6 +51,8 @@ public final class Reduction<T> implements Supplier<T> {
 
     /**
      * Reduction exception setter.
+     * @param error exception
+     * @return this reduction instance
      */
     public Reduction<T> setReductionException(ReductionException error) {
         this.reductionException = Optional.of(error);
@@ -59,6 +66,8 @@ public final class Reduction<T> implements Supplier<T> {
 
     /**
      * Sets new result value.
+     * @param newValue updated value
+     * @return this reduction instance
      */
     public Reduction<T> set(T newValue) {
         this.value = newValue;

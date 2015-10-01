@@ -14,6 +14,7 @@ public interface IReducer<R, T> extends BiFunction<R, T, Reduction<R>> {
 
     /**
      * Supplier of initial value.
+     * @return optional value of type R
      */
     default Optional<R> init() {
         return Optional.empty();
@@ -21,6 +22,8 @@ public interface IReducer<R, T> extends BiFunction<R, T, Reduction<R>> {
 
     /**
      * Complete function.
+     * @param value last reduction value
+     * @return completed reduction
      */
     default Reduction<R> complete(Reduction<R> value) {
         return value;

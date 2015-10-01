@@ -24,6 +24,8 @@ public final class Implementations {
     /**
      * Creates a transducer that transforms a reducing function by applying a mapping
      * function to each input.
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> id() {
         return new ITransducer<A, A>() {
@@ -37,6 +39,10 @@ public final class Implementations {
     /**
      * Creates a transducer that transforms a reducing function by applying a mapping
      * function to each input.
+     * @param function mapper function
+     * @param <A> type
+     * @param <B> type
+     * @return transducer
      */
     public static <A, B> ITransducer<A, B> map(final Function<B, ? extends A> function) {
         return new ITransducer<A, B>() {
@@ -58,6 +64,9 @@ public final class Implementations {
      * Creates a transducer that transforms a reducing function by applying a
      * predicate to each input and processing only those inputs for which the
      * predicate is true.
+     * @param predicate filter
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> filter(final Predicate<A> predicate) {
         return new ITransducer<A, A>() {
@@ -79,6 +88,9 @@ public final class Implementations {
     /**
      * Creates a transducer that transforms a reducing function by accepting
      * an iterable of the expected input type and reducing it.
+     * @param <A> type
+     * @param <B> type
+     * @return transducer
      */
     public static <A, B extends Iterable<A>> ITransducer<A, B> cat() {
         return new ITransducer<A, B>() {
@@ -92,6 +104,11 @@ public final class Implementations {
     /**
      * Creates a transducer that transforms a reducing function using
      * a composition of map and cat.
+     * @param f mapper
+     * @param <A> type
+     * @param <B> type
+     * @param <C> type
+     * @return transducer
      */
     public static <A, B extends Iterable<A>, C> ITransducer<A, C> mapcat(Function<C, B> f) {
         return map(f).compose(Implementations.<A, B>cat());
@@ -101,6 +118,9 @@ public final class Implementations {
      * Creates a transducer that transforms a reducing function by applying a
      * predicate to each input and not processing those inputs for which the
      * predicate is true.
+     * @param predicate filter
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> remove(final Predicate<A> predicate) {
         return new ITransducer<A, A>() {
@@ -122,6 +142,9 @@ public final class Implementations {
     /**
      * Creates a transducer that transforms a reducing function such that
      * it only processes n inputs, then the reducing process stops.
+     * @param n number of elements to take
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> take(final long n) {
         return new ITransducer<A, A>() {
@@ -153,6 +176,9 @@ public final class Implementations {
      * Creates a transducer that transforms a reducing function such that
      * it processes inputs as long as the provided predicate returns true.
      * If the predicate returns false, the reducing process stops.
+     * @param predicate filter
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> takeWhile(final Predicate<A> predicate) {
         return new ITransducer<A, A>() {
@@ -178,6 +204,9 @@ public final class Implementations {
     /**
      * Creates a transducer that transforms a reducing function such that
      * it skips n inputs, then processes the rest of the inputs.
+     * @param n number of elements to drop
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> drop(final long n) {
         return new ITransducer<A, A>() {
@@ -209,6 +238,9 @@ public final class Implementations {
      * it skips inputs as long as the provided predicate returns true.
      * Once the predicate returns false, the rest of the inputs are
      * processed.
+     * @param predicate filter
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> dropWhile(final Predicate<A> predicate) {
         return new ITransducer<A, A>() {
@@ -230,8 +262,11 @@ public final class Implementations {
     }
 
     /**
-     * Creates a transducer that transforms a reducing function such that
+     * * Creates a transducer that transforms a reducing function such that
      * it processes every nth input.
+     * @param n number
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> takeNth(final long n) {
         return new ITransducer<A, A>() {
@@ -257,6 +292,9 @@ public final class Implementations {
      * Creates a transducer that transforms a reducing function such that
      * inputs that are keys in the provided map are replaced by the corresponding
      * value in the map.
+     * @param map associations
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> replace(final Map<A, A> map) {
         return map(value -> map.containsKey(value) ? map.get(value) : value);
@@ -266,6 +304,9 @@ public final class Implementations {
      * Creates a transducer that transforms a reducing function by applying a
      * function to each input and processing the resulting value, ignoring values
      * that are empty.
+     * @param function filter
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> keep(final Function<A, Optional<A>> function) {
         return new ITransducer<A, A>() {
@@ -288,6 +329,9 @@ public final class Implementations {
      * Creates a transducer that transforms a reducing function by applying a
      * function to each input and processing the resulting value, ignoring values
      * that are empty.
+     * @param function filter
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> keepIndexed(final BiFunction<Long, A, Optional<A>> function) {
         return new ITransducer<A, A>() {
@@ -314,6 +358,8 @@ public final class Implementations {
      * Creates a transducer that transforms a reducing function such that
      * consecutive identical input values are removed, only a single value
      * is processed.
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> dedupe() {
         return new ITransducer<A, A>() {
@@ -342,6 +388,9 @@ public final class Implementations {
     /**
      * Creates a transducer that transforms a reducing function such that
      * it has the specified probability of processing each input.
+     * @param probability chance
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<A, A> randomSample(final Double probability) {
         return filter(val -> Math.random() < probability);
@@ -354,6 +403,10 @@ public final class Implementations {
      * the same value, only forwarding them to the next reducing function when the value
      * the partitioning function returns for a given input is different from the value
      * returned for the previous input.
+     * @param function mapper
+     * @param <A> type
+     * @param <P> type
+     * @return transducer
      */
     public static <A, P> ITransducer<Iterable<A>, A> partitionBy(final Function<A, P> function) {
         return new ITransducer<Iterable<A>, A>() {
@@ -411,6 +464,9 @@ public final class Implementations {
      * by gathering series of inputs into partitions of a given size, only forwarding
      * them to the next reducing function when enough inputs have been accrued. Processes
      * any remaining buffered inputs when the reducing process completes.
+     * @param n number
+     * @param <A> type
+     * @return transducer
      */
     public static <A> ITransducer<Iterable<A>, A> partitionAll(final int n) {
         return new ITransducer<Iterable<A>, A>() {

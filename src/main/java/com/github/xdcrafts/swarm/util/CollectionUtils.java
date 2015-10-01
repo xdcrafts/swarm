@@ -1,20 +1,20 @@
-package com.github.xdcrafts.swarm.commons;
+package com.github.xdcrafts.swarm.util;
 
 import java.util.Collection;
 import java.util.concurrent.TimeoutException;
 
 /**
  * Collection utils.
- * @author ipogudin
- *
  */
 public class CollectionUtils {
 
     /**
      * Wait while collection is not empty with timeout.
-     * @param c
+     * @param c collection
      * @param timeout in milliseconds
      * @param step step to sleep during waiting
+     * @throws InterruptedException if something fails
+     * @throws TimeoutException if something fails
      */
     public static void waitWhileCollectionIsNotEmpty(
             Collection<?> c, long timeout, long step) throws InterruptedException, TimeoutException {
@@ -31,9 +31,10 @@ public class CollectionUtils {
 
     /**
      * Wait while collection is not empty with timeout.
-     * @param c
+     * @param c collection
      * @param timeout in milliseconds
-     * @throws InterruptedException
+     * @throws InterruptedException if something fails
+     * @throws TimeoutException if something fails
      */
     public static void waitWhileCollectionIsNotEmpty(
             Collection<?> c, long timeout) throws InterruptedException, TimeoutException {

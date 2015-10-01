@@ -1,8 +1,8 @@
 package com.github.xdcrafts.swarm.async;
 
 import com.github.xdcrafts.swarm.async.impl.Channel;
-import com.github.xdcrafts.swarm.commons.LangUtils;
-import com.github.xdcrafts.swarm.monads.Either;
+import com.github.xdcrafts.swarm.javaz.trym.ITryM;
+import com.github.xdcrafts.swarm.util.LangUtils;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -16,12 +16,9 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
-import static com.github.xdcrafts.swarm.async.Async.pipe;
-import static com.github.xdcrafts.swarm.async.Async.putLoop;
-import static com.github.xdcrafts.swarm.async.Async.takeLoop;
 
 /**
- * Tests fro async channels.
+ * Tests for async channels.
  */
 public class AsyncTest {
 
@@ -41,7 +38,7 @@ public class AsyncTest {
         return new Async.AsyncCompletionHandler<B>() {
             volatile int counter = 1;
             @Override
-            public void handle(Either<Throwable, B> result, Async.Completion completion) {
+            public void handle(ITryM<B> result, Async.Completion completion) {
                 if (counter++ >= n) {
                     completion.done();
                 }
@@ -53,8 +50,8 @@ public class AsyncTest {
         return new Async.AsyncCompletionHandler<B>() {
             volatile int counter = 1;
             @Override
-            public void handle(Either<Throwable, B> result, Async.Completion completion) {
-                result.consumeRight(consumer);
+            public void handle(ITryM<B> result, Async.Completion completion) {
+                result.foreach(consumer);
                 if (counter++ >= n) {
                     completion.done();
                 }

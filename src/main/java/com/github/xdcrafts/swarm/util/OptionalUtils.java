@@ -1,4 +1,4 @@
-package com.github.xdcrafts.swarm.commons;
+package com.github.xdcrafts.swarm.util;
 
 import java.util.Arrays;
 import java.util.Optional;

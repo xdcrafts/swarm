@@ -1,6 +1,7 @@
 package com.github.xdcrafts.swarm.async;
 
-import com.github.xdcrafts.swarm.monads.Either;
+import com.github.xdcrafts.swarm.javaz.trym.ITryM;
+import com.github.xdcrafts.swarm.javaz.trym.TryMOps;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -10,7 +11,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.Optional.empty;
-import static java.util.Optional.ofNullable;
 
 /**
  * Namespace for async helper functions.
@@ -57,7 +57,7 @@ public final class Async {
         /**
          * Handles async result with completion hook.
          */
-        void handle(Either<Throwable, V> result, Completion completion);
+        void handle(ITryM<V> result, Completion completion);
     }
 
     /**
@@ -77,7 +77,9 @@ public final class Async {
                         );
                     }
                     try {
-                        asyncCompletionHandler.handle(Either.either(ofNullable(err), res), completion);
+                        final ITryM<Supplier<T>> result = res != null && res.isPresent()
+                            ? TryMOps.success(res.get()) : TryMOps.fail(err);
+                        asyncCompletionHandler.handle(result, completion);
                     } catch (Throwable t) {
                         completion.exceptionally(t);
                     }
@@ -137,7 +139,8 @@ public final class Async {
                         );
                     }
                     try {
-                        asyncCompletionHandler.handle(Either.either(err, res), completion);
+                        final ITryM<T> result = res != null ? TryMOps.success(res) : TryMOps.fail(err);
+                        asyncCompletionHandler.handle(result, completion);
                     } catch (Throwable t) {
                         completion.exceptionally(t);
                     }
@@ -170,7 +173,7 @@ public final class Async {
         Consumer<T> consumer
     ) {
         final Completion completion = new Completion();
-        takeLoop(channel, (res, cmp) -> res.consumeRight(consumer), completion);
+        takeLoop(channel, (res, cmp) -> res.foreach(consumer), completion);
         return completion.get();
     }
 
@@ -182,7 +185,7 @@ public final class Async {
         BiConsumer<T, Completion> consumer
     ) {
         final Completion completion = new Completion();
-        takeLoop(channel, (res, cmp) -> res.consumeRight(r -> consumer.accept(r, cmp)), completion);
+        takeLoop(channel, (res, cmp) -> res.foreach(r -> consumer.accept(r, cmp)), completion);
         return completion.get();
     }
 

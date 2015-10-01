@@ -1,19 +1,18 @@
-package com.github.xdcrafts.swarm.commons;
+package com.github.xdcrafts.swarm.util;
 
 import java.util.Optional;
 
 /**
  * Class utils.
- * @author ipogudin
- *
  */
 public class ClassUtils {
 
     /**
      * Cast object to clazz and returns Optional. If it can not be cast then the Optional is empty.
-     * @param o
-     * @param clazz
-     * @return
+     * @param <T> type to cast to
+     * @param o object to cast
+     * @param clazz class to cast to
+     * @return optional value of type T
      */
     public static <T> Optional<T> cast(Object o, Class<T> clazz) {
         T result = null;

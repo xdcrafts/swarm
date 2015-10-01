@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static com.github.xdcrafts.swarm.transducers.Reduction.reduction;
-import static com.github.xdcrafts.swarm.commons.FutureUtils.within;
+import static com.github.xdcrafts.swarm.util.FutureUtils.within;
 
 /**
  * Implementation of IChannel.
@@ -44,6 +44,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup executor.
+         * @return this builder instance
          */
         public ChannelBuilder<T, I> withExecutor(Executor e) {
             this.executor = e;
@@ -51,6 +52,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup buffer.
+         * @return this builder instance
          */
         public ChannelBuilder<T, I> withBuffer(IBuffer<Supplier<T>> b) {
             this.buffer = b;
@@ -58,6 +60,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup capacity.
+         * @return this builder instance
          */
         public ChannelBuilder<T, I> withCapacity(int n) {
             this.buffer = new FixedBuffer<>(n);
@@ -65,6 +68,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup max put requests.
+         * @return this builder instance
          */
         public ChannelBuilder<T, I> withMaxPutRequests(int max) {
             this.maxPutRequests = max;
@@ -72,6 +76,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup max take requests.
+         * @return this builder instance
          */
         public ChannelBuilder<T, I> withMaxTakeRequests(int max) {
             this.maxTakeRequests = max;
@@ -79,6 +84,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup take timeout.
+         * @return this builder instance
          */
         public ChannelBuilder<T, I> withTakeTimeout(Duration timeout) {
             this.takeDuration = timeout;
@@ -86,6 +92,7 @@ public final class Channel<T, I> implements IChannel<T, I> {
         }
         /**
          * Setup put timeout.
+         * @return this builder instance
          */
         public ChannelBuilder<T, I> withPutTimeout(Duration timeout) {
             this.putDuration = timeout;
@@ -119,6 +126,8 @@ public final class Channel<T, I> implements IChannel<T, I> {
 
     /**
      * Creates new channel instance.
+     * @param <T> channel values type
+     * @return new channel builder from T to T
      */
     public static <T> ChannelBuilder<T, T> channel() {
         return new ChannelBuilder<>(Implementations.id());
@@ -126,6 +135,9 @@ public final class Channel<T, I> implements IChannel<T, I> {
 
     /**
      * Creates new channel instance.
+     * @param <T> channel result type
+     * @param <I> channel input type
+     * @return new channel builder from I to T
      */
     public static <T, I> ChannelBuilder<T, I> channel(ITransducer<Supplier<T>, Supplier<I>> transducer) {
         return new ChannelBuilder<>(transducer);

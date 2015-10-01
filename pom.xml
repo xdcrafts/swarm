@@ -1,11 +1,34 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.swarm</groupId>
+  <groupId>com.github.xdcrafts.swarm</groupId>
   <artifactId>swarm</artifactId>
   <packaging>jar</packaging>
   <version>1.0-SNAPSHOT</version>
-  <name>swarm</name>
+  <name>${project.groupId}:${project.artifactId}</name>
+  <description>Swarm is set of helpful discrete libraries implemented in single-jar library</description>
+  <url>https://github.com/xdcrafts/swarm</url>
+
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Vadim Dubs</name>
+      <email>catofflames@gmail.com</email>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git@github.com:xdcrafts/swarm.git</connection>
+    <developerConnection>scm:git:git@github.com:xdcrafts/swarm.git</developerConnection>
+    <url>git@github.com:xdcrafts/swarm.git</url>
+  </scm>
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -14,6 +37,7 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
@@ -25,6 +49,40 @@
           <target>1.8</target>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.10.3</version>
+        <configuration>
+          <show>private</show>
+          <nohelp>true</nohelp>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.10.3</version>
+        <configuration>
+          <show>public</show>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
 </project>

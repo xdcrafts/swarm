@@ -4,7 +4,7 @@
  * Proprietary and confidential
  * Created by placeiq 2015
  *******************************************************************************/
-package com.github.xdcrafts.swarm.commons;
+package com.github.xdcrafts.swarm.util;
 
 import java.time.Duration;
 import java.util.Collection;

@@ -22,6 +22,8 @@ public final class IdOps implements IMonadOps<Id<?>> {
         // Nothing
     }
 
+    public static final IdOps ID = new IdOps();
+
     @Override
     public <U> Id<U> pure(U value) {
         return id(value);

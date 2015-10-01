@@ -5,7 +5,6 @@ import com.github.xdcrafts.swarm.javaz.common.monad.IMonad;
 import com.github.xdcrafts.swarm.javaz.common.tuple.Tuple;
 import com.github.xdcrafts.swarm.javaz.option.IOption;
 import com.github.xdcrafts.swarm.javaz.trym.ITryM;
-import com.github.xdcrafts.swarm.util.function.IFunction;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -143,7 +142,7 @@ public class Future<T> implements IFuture<T> {
     @Override
     public <U, MM extends IMonad<U, IFuture<?>>> Future<U> flatMap(Function<T, MM> function) {
         final Future<U> future = future(this.executor);
-        final IFunction<T, Future<U>> toApply = (IFunction<T, Future<U>>) function;
+        final Function<T, Future<U>> toApply = (Function<T, Future<U>>) function;
         onComplete((tryM) -> {
                 if (tryM.isSuccess()) {
                     toApply.apply(tryM.value()).onComplete(future::complete);

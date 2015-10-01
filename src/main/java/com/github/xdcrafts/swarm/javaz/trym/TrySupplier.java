@@ -13,9 +13,9 @@ public class TrySupplier<T> implements ISupplier<ITryM<T>> {
 
     /**
      * Converts throwing supplier to try.
-     * @param supplier
-     * @param <T>
-     * @return
+     * @param supplier supplier function
+     * @param <T> return type
+     * @return try supplier
      */
     public static <T> TrySupplier<T> trySupplier(IThrowingSupplier<T> supplier) {
         return new TrySupplier<>(supplier);

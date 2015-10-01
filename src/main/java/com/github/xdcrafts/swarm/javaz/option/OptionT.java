@@ -117,6 +117,7 @@ public final class OptionT<T, M extends IMonad<?, M>> {
     /**
      * Extracts value with orElse from internal option.
      * @param <MT> return monad type
+     * @param elseValue default value
      * @return monad
      */
     public <MT extends IMonad<T, M>> MT orElse(final T elseValue) {
@@ -126,6 +127,7 @@ public final class OptionT<T, M extends IMonad<?, M>> {
     /**
      * Extracts value with or from internal option.
      * @param <MT> return monad type
+     * @param elseValue default value
      * @return monad
      */
     public <MT extends IMonad<T, M>> MT or(final IOption<T> elseValue) {

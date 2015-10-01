@@ -52,7 +52,7 @@ public interface IFuture<T> extends IMonad<T, IFuture<?>> {
     void onFailure(Consumer<Throwable> onFailure);
     /**
      * Calls onComplete when future completes.
-     * @param onComplete
+     * @param onComplete callback
      */
     void onComplete(Consumer<ITryM<T>> onComplete);
     /**
@@ -84,6 +84,8 @@ public interface IFuture<T> extends IMonad<T, IFuture<?>> {
     ITryM<T> get();
     /**
      * Blocks and returns result as try monad within timeout.
+     * @param timeout absolute value
+     * @param timeUnit time unit
      * @return try monad
      */
     ITryM<T> get(long timeout, TimeUnit timeUnit);

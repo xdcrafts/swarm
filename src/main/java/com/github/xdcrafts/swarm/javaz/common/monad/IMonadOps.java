@@ -15,7 +15,7 @@ import java.util.function.Function;
 
 /**
  * Utility functions that can be applied to monads of type M.
- * @param <M>
+ * @param <M> Monad type
  */
 @SuppressWarnings("unchecked")
 public interface IMonadOps<M extends IMonad<?, M>> extends IApplicativeOps<M> {

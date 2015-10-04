@@ -5,12 +5,14 @@ import com.github.xdcrafts.swarm.javaz.trym.TryMOps;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import static java.util.Optional.empty;
+import static java.util.Optional.ofNullable;
 
 /**
  * Namespace for async helper functions.
@@ -22,32 +24,52 @@ public final class Async {
     }
 
     /**
-     * Internal completion hook.
+     * Completion hook that performs control over execution of async processes.
      */
     public static class Completion {
         private final CompletableFuture<Void> completion = new CompletableFuture<>();
+        private volatile boolean isDone = false;
+        /**
+         * Causes completion of async process.
+         */
+        public void done() {
+            this.isDone = true;
+        }
+        private boolean isDone() {
+            return this.isDone;
+        }
         /**
          * Completes with exception.
          * @param error exception
          */
-        public void exceptionally(Throwable error) {
+        private void exceptionally(Throwable error) {
+            this.isDone = true;
             this.completion.completeExceptionally(error);
         }
         /**
          * Completes normally.
          */
-        public void done() {
+        private void complete() {
+            this.isDone = true;
             this.completion.complete(null);
         }
-        public boolean isDone() {
+        public boolean isCompleted() {
             return this.completion.isDone();
         }
         /**
-         * Completion hook.
-         * @return completable future
+         * Blocking till this completion isDone.
+         * @throws ExecutionException in case of async exceptions
+         * @throws InterruptedException in case of async exceptions
          */
-        public CompletableFuture<Void> get() {
-            return this.completion;
+        public void await() throws ExecutionException, InterruptedException {
+            this.completion.get();
+        }
+        /**
+         * Attaches completion consumer that is able to handle possible errors.
+         * @param completionHandler callback
+         */
+        public void whenComplete(Consumer<Optional<Throwable>> completionHandler) {
+            this.completion.whenComplete((res, err) -> completionHandler.accept(ofNullable(err)));
         }
     }
 
@@ -86,13 +108,16 @@ public final class Async {
                         asyncCompletionHandler.handle(result, completion);
                     } catch (Throwable t) {
                         completion.exceptionally(t);
+                        return;
                     }
                     if (!completion.isDone()) {
                         putLoop(channel, supplier, asyncCompletionHandler, completion);
+                    } else {
+                        completion.complete();
                     }
                 });
         } else {
-            completion.done();
+            completion.complete();
         }
     }
 
@@ -104,16 +129,16 @@ public final class Async {
      * @param asyncCompletionHandler completion handler
      * @param <T> channel value type
      * @param <I> channel input type
-     * @return future that completes with end of looping
+     * @return completion hook
      */
-    public static <T, I> CompletableFuture<Void> putLoop(
+    public static <T, I> Completion putLoop(
         IChannel<T, I> channel,
         Supplier<I> supplier,
         AsyncCompletionHandler<Supplier<T>> asyncCompletionHandler
     ) {
         final Completion completion = new Completion();
         putLoop(channel, supplier, asyncCompletionHandler, completion);
-        return completion.get();
+        return completion;
     }
 
     /**
@@ -123,9 +148,9 @@ public final class Async {
      * @param supplier supplier function
      * @param <T> channel value type
      * @param <I> channel input type
-     * @return future that completes with end of looping
+     * @return completion hook
      */
-    public static <T, I> CompletableFuture<Void> putLoop(
+    public static <T, I> Completion putLoop(
         IChannel<T, I> channel,
         Supplier<I> supplier
     ) {
@@ -137,7 +162,7 @@ public final class Async {
             },
             completion
         );
-        return completion.get();
+        return completion;
     }
 
     /**
@@ -160,13 +185,16 @@ public final class Async {
                         asyncCompletionHandler.handle(result, completion);
                     } catch (Throwable t) {
                         completion.exceptionally(t);
+                        return;
                     }
                     if (!completion.isDone()) {
                         takeLoop(channel, asyncCompletionHandler, completion);
+                    } else {
+                        completion.complete();
                     }
                 });
         } else {
-            completion.done();
+            completion.complete();
         }
     }
 
@@ -177,15 +205,15 @@ public final class Async {
      * @param asyncCompletionHandler async handler
      * @param <T> channel values type
      * @param <I> channel input type
-     * @return future that completes with end of looping
+     * @return completion hook
      */
-    public static <T, I> CompletableFuture<Void> takeLoop(
+    public static <T, I> Completion takeLoop(
         IChannel<T, I> channel,
         AsyncCompletionHandler<T> asyncCompletionHandler
     ) {
         final Completion completion = new Completion();
         takeLoop(channel, asyncCompletionHandler, completion);
-        return completion.get();
+        return completion;
     }
 
     /**
@@ -195,15 +223,15 @@ public final class Async {
      * @param consumer async handler
      * @param <T> channel values type
      * @param <I> channel input type
-     * @return future that completes with end of looping
+     * @return completion hook
      */
-    public static <T, I> CompletableFuture<Void> takeLoop(
+    public static <T, I> Completion takeLoop(
         IChannel<T, I> channel,
         Consumer<T> consumer
     ) {
         final Completion completion = new Completion();
         takeLoop(channel, (res, cmp) -> res.foreach(consumer), completion);
-        return completion.get();
+        return completion;
     }
 
     /**
@@ -213,15 +241,15 @@ public final class Async {
      * @param consumer async handler
      * @param <T> channel values type
      * @param <I> channel input type
-     * @return future that completes with end of looping
+     * @return completion hook
      */
-    public static <T, I> CompletableFuture<Void> takeLoop(
+    public static <T, I> Completion takeLoop(
         IChannel<T, I> channel,
         BiConsumer<T, Completion> consumer
     ) {
         final Completion completion = new Completion();
         takeLoop(channel, (res, cmp) -> res.foreach(r -> consumer.accept(r, cmp)), completion);
-        return completion.get();
+        return completion;
     }
 
     /**
@@ -231,7 +259,7 @@ public final class Async {
         IChannel<T, I> left,
         IChannel<R, V> right,
         Function<T, V> mapper,
-        CompletableFuture<Void> completion
+        Completion completion
     ) {
         if (!left.isClosed() && !right.isClosed()) {
             left.take().whenComplete((res, err) -> {
@@ -239,10 +267,14 @@ public final class Async {
                     if (res != null) {
                         put = right.put(() -> mapper.apply(res));
                     }
-                    put.whenComplete((putRes, putErr) -> pipe(left, right, mapper));
+                    put.whenComplete((putRes, putErr) -> {
+                            if (!completion.isDone()) {
+                                pipe(left, right, mapper);
+                            }
+                        });
                 });
         } else {
-            completion.complete(null);
+            completion.complete();
         }
     }
 
@@ -255,14 +287,14 @@ public final class Async {
      * @param <V> right channel input type
      * @param <T> left channel values type
      * @param <I> left channel input type
-     * @return future that completes with end of looping
+     * @return completion hook
      */
-    public static <R, V, T, I> CompletableFuture<Void> pipe(
+    public static <R, V, T, I> Completion pipe(
         IChannel<T, I> left,
         IChannel<R, V> right,
         Function<T, V> mapper
     ) {
-        final CompletableFuture<Void> completion = new CompletableFuture<>();
+        final Completion completion = new Completion();
         pipe(left, right, mapper, completion);
         return completion;
     }
@@ -274,9 +306,9 @@ public final class Async {
      * @param <R> right channel values type
      * @param <T> left channel values type
      * @param <I> left channel input type
-     * @return future that completes with end of looping
+     * @return completion hook
      */
-    public static <R, T, I> CompletableFuture<Void> pipe(IChannel<T, I> left, IChannel<R, T> right) {
+    public static <R, T, I> Completion pipe(IChannel<T, I> left, IChannel<R, T> right) {
         return pipe(left, right, Function.<T>identity());
     }
 }

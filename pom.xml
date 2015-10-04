@@ -4,7 +4,7 @@
   <groupId>com.github.xdcrafts</groupId>
   <artifactId>swarm</artifactId>
   <packaging>jar</packaging>
-  <version>1.0.0</version>
+  <version>1.0.1-SNAPSHOT</version>
   <name>${project.groupId}:${project.artifactId}</name>
   <description>Swarm is set of helpful discrete libraries implemented in single-jar library</description>
   <url>https://github.com/xdcrafts/swarm</url>

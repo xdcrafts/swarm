@@ -118,12 +118,12 @@ public class AsyncTest {
     public void takeAndPutWhileTest() throws InterruptedException, ExecutionException {
         final IChannel<String, String> channel = Channel.<String>channel().get();
         final List<String> values = new ArrayList<>();
-        final CompletableFuture<Void> first = Async.takeLoop(channel, takeN(8, values::add));
+        final Async.Completion first = Async.takeLoop(channel, takeN(8, values::add));
         Async.putLoop(channel, LangUtils.supply("value"), putN(10));
-        first.get();
+        first.await();
         assertEquals(8, values.size());
-        final CompletableFuture<Void> second = Async.takeLoop(channel, takeN(2, values::add));
-        second.get();
+        final Async.Completion second = Async.takeLoop(channel, takeN(2, values::add));
+        second.await();
         assertEquals(10, values.size());
     }
 
